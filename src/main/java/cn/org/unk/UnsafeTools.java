@@ -16,6 +16,7 @@ public class UnsafeTools {
         return unsafe;
     }
 
+    // 哪个类里面有 setAccessible 跨模块操作会报错的, 调用这个就行
     public static void bypassModule(Class clazz) throws Exception{
         setFieldValue(clazz,"module",Object.class.getModule());
     }

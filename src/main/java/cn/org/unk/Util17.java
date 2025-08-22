@@ -73,7 +73,7 @@ public class Util17 {
     public static void setFieldValue(Object obj,String fieldname,Object value) throws Exception, IllegalAccessException {
         Field field= getField(obj.getClass(),fieldname);
 
-        if(field == null) throw new Exception("field "+fieldname + "not found!");
+        if(field == null) throw new Exception("field "+fieldname + " not found!");
         field.setAccessible(true);
         field.set(obj,value);
     }
